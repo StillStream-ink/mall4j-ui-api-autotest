@@ -1,8 +1,8 @@
 # Mall4j UI + API 自动化测试
 
-> 168 条通过用例只是结果，工程化能力才是项目本身。
+> 176 条通过用例只是结果，工程化能力才是项目本身。
 
-![Tests](https://img.shields.io/badge/tests-168%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-176%20passed-brightgreen)
 ![Bugs](https://img.shields.io/badge/bugs-3%20found-red)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Playwright](https://img.shields.io/badge/playwright-1.63-green)
@@ -25,7 +25,7 @@
 - 弱网 + 兼容性 + RBAC + 缓存一致性专项测试
 - 最终通过订单状态机 + 限流 + 弱网测试发现 3 个真实缺陷
 
-168 条通过用例只是结果，工程化能力才是项目本身。
+176 条通过用例只是结果，工程化能力才是项目本身。
 
 ---
 
@@ -106,6 +106,33 @@
 
 缺陷密度约 2%。
 
+---
+---
+
+## 📊 测试报告
+
+### Allure 总览（192 条用例，100% 通过）
+
+![Allure Overview](screenshots/allure-overview.png)
+
+### 按模块分布
+
+![Allure Behaviors](screenshots/allure-behaviors.png)
+
+### 用例详情（含请求/响应/断言）
+
+![Allure Detail](screenshots/allure-detail.png)
+
+**报告统计**：
+
+| 模块 | 用例数 |
+|---|---|
+| 接口测试 | 110（含 6 xfailed） |
+| UI 测试 | 73（含 1 xfailed） |
+| 单元测试 | 9 |
+| **合计** | **192** |
+
+**覆盖范围**：登录 / 产品 / 会员 / 门店 / 订单 / 系统管理 / 弱网 / 兼容性 / RBAC / 数据一致性 / 多表关联 / 性能基线
 ---
 
 ## 技术栈
@@ -192,29 +219,6 @@
 | 弱网模拟 | CDP 模拟 3G/2G/断网 |
 | 兼容性矩阵 | 3 引擎 × 3 分辨率 |
 | 数据一致性 | 接口 + DB 双重断言 |
-
----
-
-## 面试要点
-
-能讲清的 6 个技术点：
-
-1. 如何设计测试用例矩阵？→ 数据驱动 + 等价类 + 边界值
-2. 为什么要做接口 + DB 双重断言？→ 接口返回成功不等于数据落库
-3. 如何定位前端 bug 还是后端 bug？→ 抓包 + 日志 + DB 三步定位
-4. 自动化测试发现过什么缺陷？→ BUG-001 P0 缺陷的完整过程
-5. 为什么 UI 和接口放同一个项目？→ 双轨共用配置 + 互相配合
-6. 弱网测试的局限在哪？→ 本地模拟 vs 真实网络差异
-
-能展示的工程能力：
-
-- POM 三层架构设计
-- 数据工厂 fixture 生命周期管理
-- pytest-xdist 并行决策
-- Redis 限流 + 缓存一致性测试
-- CDP 弱网模拟
-- 契约测试 + 性能基线
-- RBAC 权限隔离验证
 
 ---
 
