@@ -21,7 +21,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest pycryptodome
+          pip install pytest pytest-xdist allure-pytest pycryptodome playwright requests
+          python -m playwright install --with-deps chromium
 
       - name: Run unit tests
         run: |
