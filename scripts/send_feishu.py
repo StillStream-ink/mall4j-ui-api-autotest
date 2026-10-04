@@ -9,7 +9,7 @@ from pathlib import Path
 import requests
 
 # ========== 配置区 ==========
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 RESULTS_DIR = BASE_DIR / "reports" / "allure-results"
 
 # 自动加载 .env

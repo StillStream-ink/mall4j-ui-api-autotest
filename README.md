@@ -2,6 +2,7 @@
 
 > 基于 Playwright + Pytest 的电商系统双轨自动化测试项目
 
+[![Unit Tests](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml/badge.svg)](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml)
 ![Tests](https://img.shields.io/badge/tests-192%20cases-blue)
 ![Bugs](https://img.shields.io/badge/bugs-3%20found-red)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
@@ -71,9 +72,9 @@ pytest testcases/ # 全跑
 
 | ID | 描述 | 严重程度 |
 |---|---|---|
-| [BUG-001](./BUGS.md) | 发货接口缺少订单状态校验 | P0 |
-| [BUG-002](./BUGS.md) | 登录成功后不清除密码错误计数 | P2 |
-| [BUG-003](./BUGS.md) | 断网时前端无网络异常提示 | P1 |
+| [BUG-001](./docs/BUGS.md) | 发货接口缺少订单状态校验 | P0 |
+| [BUG-002](./docs/BUGS.md) | 登录成功后不清除密码错误计数 | P2 |
+| [BUG-003](./docs/BUGS.md) | 断网时前端无网络异常提示 | P1 |
 
 ### 8. Linux 运维脚本
 
