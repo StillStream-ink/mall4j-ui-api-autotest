@@ -7,7 +7,7 @@ import pytest
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
-from api.login_api import encrypt_password
+from common.crypto import encrypt_password
 
 AES_KEY = b"-mall4j-password"
 

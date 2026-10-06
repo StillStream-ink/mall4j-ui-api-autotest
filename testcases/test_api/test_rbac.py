@@ -6,6 +6,7 @@ import uuid
 import requests
 
 from config.settings import API_URL
+from api.client import APIClient
 from api.rbac_api import SysUserCrudApi, SysMenuApi, RBACLoginApi
 from api.crud_api import SysRoleCrudApi
 
@@ -68,8 +69,7 @@ class TestRBAC:
         body = menu_api.nav().json()
         assert body["code"] == "00000"
         menus = body["data"].get("menuList") or []
-        print(f"\nadmin 菜单数: {len(menus)}")
-        assert len(menus) > 0, "admin 应有菜单"
+        assert len(menus) > 0
 
     @allure.title("创建受限角色（仅授 1 个菜单）")
     def test_create_restricted_role(self, role_api, menu_api):
@@ -121,8 +121,8 @@ class TestRBAC:
         password = "Test@123456"
         user_api.create(username, password, role_id_list=[role["roleId"]])
 
-        # 4. 用新用户登录
-        login_api = RBACLoginApi(API_URL)
+        # 4. 用新用户登录（独立 client，不共享 api_session）
+        login_api = RBACLoginApi(APIClient(base_url=API_URL))
         resp = login_api.login(username, password)
         body = resp.json()
         assert body["success"] is True, f"新用户登录失败: {body}"
@@ -142,7 +142,7 @@ class TestRBAC:
         admin_nav = menu_api.nav().json()
         admin_menus = admin_nav["data"].get("menuList") or []
 
-        # 7. 打印对比信息，方便排查
+        # 7. 打印对比信息
         print("\n" + "=" * 60)
         print(f"  admin 菜单数: {len(admin_menus)}")
         for m in admin_menus:
@@ -154,12 +154,8 @@ class TestRBAC:
             print(f"    [受限] {m.get('name')}  (子菜单 {len(sub)} 个)")
         print("=" * 60 + "\n")
 
-        # 8. 断言：受限用户菜单数应少于 admin
+        # 8. 断言
         assert len(nav_menus) < len(admin_menus), (
             f"受限用户菜单数({len(nav_menus)}) 应少于 admin({len(admin_menus)})。"
-            f"如果相等，说明后端未做菜单权限过滤 —— 记录为 BUG-004。"
         )
-
-        # 9. 断言：受限用户菜单应只包含被授权的那 1 个
         assert len(nav_menus) >= 1, "受限用户至少有 1 个菜单"
-    

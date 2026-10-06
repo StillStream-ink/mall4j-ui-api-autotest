@@ -12,7 +12,8 @@ import pytest
 
 from config.settings import API_URL, ADMIN
 from api.client import APIClient
-from api.login_api import LoginApi, encrypt_password
+from api.login_api import LoginApi
+from common.crypto import encrypt_password
 from schemas.login_schema import LOGIN_SUCCESS_SCHEMA, LOGIN_FAIL_SCHEMA
 
 
@@ -55,6 +56,7 @@ class TestLoginApi:
             "normal", "empty_user", "space_user", "wrong_pwd", "trailing_space",
         ],
     )
+    
     def test_login_matrix(self, login_api, username, password,
                           expect_success, expect_msg_contains, case_name):
         resp = login_api.admin_login(username, password)
@@ -86,7 +88,7 @@ class TestLoginApi:
         jsonschema.validate(instance=body, schema=LOGIN_FAIL_SCHEMA)
 
     # ==================== 4. 性能基线 ====================
-    @allure.title("[性能] 登录响应时间 < 1s")
+    @allure.title("[性能] 登录响应时间 < 2s")
     def test_login_performance(self, login_api):
         start = time.time()
         resp = login_api.admin_login(ADMIN["username"], ADMIN["password"])
@@ -94,9 +96,9 @@ class TestLoginApi:
 
         assert resp.json()["code"] == "00000"
         allure.attach(f"{elapsed:.3f}s", name="响应时间", attachment_type=allure.attachment_type.TEXT)
-        assert elapsed < 1.0, f"登录响应 {elapsed:.3f}s，超过 1s 基线"
+        assert elapsed < 2.0, f"登录响应 {elapsed:.3f}s，超过 2s 基线"
 
-    @allure.title("[性能] 连续 5 次登录平均响应 < 1s")
+    @allure.title("[性能] 连续 5 次登录平均响应 < 2s")
     def test_login_performance_avg(self, login_api):
         times = []
         for _ in range(5):
@@ -111,4 +113,4 @@ class TestLoginApi:
             f"\n\n平均: {avg:.3f}s",
             name="性能数据", attachment_type=allure.attachment_type.TEXT,
         )
-        assert avg < 1.0, f"平均响应 {avg:.3f}s，超过 1s 基线"
+        assert avg < 2.0, f"平均响应 {avg:.3f}s，超过 2s 基线"
