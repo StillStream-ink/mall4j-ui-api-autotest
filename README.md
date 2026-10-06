@@ -3,7 +3,7 @@
 > 基于 Playwright + Pytest 的电商系统双轨自动化测试项目
 
 [![Unit Tests](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml/badge.svg)](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml)
-![Tests](https://img.shields.io/badge/tests-192%20cases-blue)
+![Tests](https://img.shields.io/badge/tests-197%20cases-blue)
 ![Bugs](https://img.shields.io/badge/bugs-3%20found-red)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Playwright](https://img.shields.io/badge/playwright-1.63-green)
@@ -92,7 +92,7 @@ pytest testcases/ # 全跑
 
 ## 测试报告
 
-### Allure 总览（192 条用例）
+### Allure 总览（197 条用例）
 
 ![Allure Overview](screenshots/allure-overview.png)
 

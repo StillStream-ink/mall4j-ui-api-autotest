@@ -243,3 +243,41 @@ pytest testcases/test_ui/test_weak_network.py::TestWeakNetwork::test_offline_log
 **处理方式**：`api_session` 改为 function scope，每条测试前重新登录。
 
 **价值**：这一条体现了"**测试隔离要隔离会话状态**"，不只是数据。
+
+
+
+---
+
+## 观察-006：sa-token 允许多 token 共存
+
+### 基本信息
+| 项 | 内容 |
+|---|---|
+| 严重程度 | 低 |
+| 优先级 | P3 |
+| 发现时间 | 2026-10-06 |
+| 发现方式 | 并发登录测试 |
+| 状态 | 已确认行为 |
+
+### 问题描述
+同账号多次登录，**旧 token 不会失效**——多个 token 可同时访问接口。
+
+### 复现步骤
+1. 第 1 次登录，拿 token1
+2. 第 2 次登录，拿 token2
+3. 用 token1 访问 `/prod/prod/page` → 仍然成功（code=00000）
+
+### 影响范围
+- **安全风险**：token 泄露后，即使重新登录也无法使旧 token 失效
+- **用户困惑**：用户以为"重新登录 = 踢掉旧设备"，实际旧设备仍在线
+
+### 根因
+sa-token 配置 `is-share = true` 或未开启"同端互斥登录"。
+
+### 修复建议
+如需踢掉旧 token，配置：
+
+```yaml
+sa-token:
+  is-concurrent: false    # 禁止同一账号并发登录
+  is-share: false         # 不共用 token
