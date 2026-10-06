@@ -89,11 +89,13 @@ class TestWeakNetwork:
 
         # 点登录
         login.click_login()
-        page.wait_for_timeout(5000)
 
-        # 期望：有错误提示
-        msgs = page.locator(".el-message, .el-notification, .el-message-box").all()
-        assert len(msgs) > 0, "断网登录应弹出错误提示"
+        # 期望：有错误提示（显式等待，不用固定等待）
+        expect(page.locator(".el-message, .el-notification, .el-message-box").first).to_be_visible(timeout=8000)
+
+
+
+
 
     @allure.title("[弱网] 断网恢复后重试登录成功")
     def test_recover_after_offline(self, page):
@@ -110,8 +112,13 @@ class TestWeakNetwork:
         page.wait_for_timeout(3000)
 
         # 恢复网络
+        # 改前
         page.context.set_offline(False)
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(3000)
+
+        # 改后（等待网络恢复后重试）
+        page.context.set_offline(False)
+        page.wait_for_timeout(500)   
 
         # 重新填（可能已清空）
         if page.locator(".login .el-input input").first.is_visible():

@@ -30,8 +30,6 @@ class DBHelper:
     def execute(self, sql, args=None):
         with self.conn.cursor() as cur:
             cur.execute(sql, args or ())
-        # autocommit=True 不需要显式 commit，但为了兼容留着
-        self.conn.commit()
 
     def close(self):
         try:

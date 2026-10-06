@@ -56,9 +56,15 @@ class LoginDialogPage(BasePage):
 
     # ---------- 断言 ----------
     def verify_login_success(self, timeout: int = 10000):
-        """登录成功：URL 变成 /home，或者页面出现 admin"""
+        """登录成功：URL 跳到 /home + 右上角出现 admin
+
+        双重断言：
+        - URL 跳转 = 路由成功
+        - HOME_FLAG 可见 = 页面真渲染出来
+        """
         logger.info("校验登录成功")
         self.page.wait_for_url("**/home", timeout=timeout)
+        self.expect_visible(self.HOME_FLAG, timeout=timeout)
 
     def verify_login_failed(self, timeout: int = 8000):
         """登录失败：出现错误提示"""

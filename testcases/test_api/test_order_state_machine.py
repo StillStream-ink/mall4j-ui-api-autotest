@@ -130,3 +130,12 @@ class TestOrderStateMachine:
         body = r2.json()
         assert body["code"] != "00000" or body.get("fail") is True, \
             "已发货订单不应重复发货"
+      
+        row = db.query_one(
+            "SELECT status, dvy_flow_id FROM tz_order WHERE order_number=%s",
+            (ORDER_NUMBER,),
+        )
+        assert row["status"] == STATUS_WAIT_RECV, \
+            f"DB status 应保持 {STATUS_WAIT_RECV}，实际 {row['status']}"
+        assert row["dvy_flow_id"] == "SF_AUTOTEST_0006", \
+            f"dvy_flow_id 不应被第 2 次请求覆盖，实际 {row['dvy_flow_id']}"

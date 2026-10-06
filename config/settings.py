@@ -6,9 +6,12 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ============ URLs ============
+# 本地后台管理前端
 WEB_URL = os.getenv("MALL4J_WEB_URL", "http://localhost:9527")
+# 本地后台管理后端 API
 API_URL = os.getenv("MALL4J_API_URL", "http://localhost:8085")
 
+# 备用：线上演示环境
 DEMO_WEB_URL = "https://b2b2b-pc-demo.mall4j.com/"
 DEMO_API_URL = "https://b2b2b-pc-demo.mall4j.com/"
 
@@ -23,16 +26,9 @@ ADMIN = {
     "username": os.getenv("ADMIN_USERNAME", "admin"),
     "password": os.getenv("ADMIN_PASSWORD", "123456"),
 }
-BUYER = {
-    "phone": os.getenv("BUYER_PHONE", "admin"),
-    "password": os.getenv("BUYER_PASSWORD", "123456"),
-}
-SELLER = {
-    "phone": os.getenv("SELLER_PHONE", "admin"),
-    "password": os.getenv("SELLER_PASSWORD", "123456"),
-}
 
 # ============ Database ============
+# 注意：本地 Mall4j 使用非标准端口 3307（默认 3306，避免本机冲突）
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT", "3307"))
 DB_USER = os.getenv("DB_USER", "root")

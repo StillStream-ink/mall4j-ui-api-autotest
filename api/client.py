@@ -22,7 +22,14 @@ class APIClient:
     def request(self, method: str, path: str, **kwargs):
         url = f"{self.base_url}{path}" if path.startswith("/") else f"{self.base_url}/{path}"
         kwargs.setdefault("timeout", self.timeout)
-        logger.info(f"[REQ] {method.upper()} {url} params={kwargs.get('params')} json={kwargs.get('json')}")
+
+        # 日志脱敏：passWord 字段替换成 ****
+        json_body = kwargs.get("json")
+        log_json = json_body
+        if isinstance(json_body, dict) and "passWord" in json_body:
+            log_json = {**json_body, "passWord": "****"}
+
+        logger.info(f"[REQ] {method.upper()} {url} params={kwargs.get('params')} json={log_json}")
         logger.info(f"      headers={dict(self.session.headers)}")
         resp = self.session.request(method, url, **kwargs)
         try:
