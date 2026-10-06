@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 """Mall4j admin member API wrapper"""
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class MemberApi:
     def __init__(self, client):
         self.client = client

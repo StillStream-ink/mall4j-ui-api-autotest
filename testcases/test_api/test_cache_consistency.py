@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""B. Redis 缓存机制验证"""
+"""Redis 缓存机制测试"""
 import allure
 import pytest
 import redis
 
-from config.settings import API_URL, ADMIN
+from config.settings import API_URL, ADMIN, REDIS_HOST, REDIS_PORT, REDIS_DB
 from api.client import APIClient
 from api.login_api import LoginApi
 
@@ -16,11 +16,11 @@ class TestRedisCache:
     @pytest.fixture
     def r(self):
         conn = redis.Redis(
-            host="127.0.0.1", port=6379,
-            decode_responses=True,
-            protocol=2,
+            host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB,
+            decode_responses=True, protocol=2,
         )
         yield conn
+        conn.close()
 
     @allure.title("[缓存] 登录后 token 落 Redis")
     def test_login_token_in_redis(self, r):

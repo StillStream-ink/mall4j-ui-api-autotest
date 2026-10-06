@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 """Order API wrapper (deep tests)"""
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class OrderApi:
     def __init__(self, client):
         self.client = client

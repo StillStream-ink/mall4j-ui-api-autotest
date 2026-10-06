@@ -11,6 +11,7 @@ import redis
 from config.settings import API_URL, ADMIN
 from api.client import APIClient
 from api.login_api import LoginApi
+from config.settings import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = 6379
@@ -32,11 +33,11 @@ class TestLoginCounterReset:
     @pytest.fixture
     def r(self):
         conn = redis.Redis(
-            host=REDIS_HOST, port=REDIS_PORT,
-            decode_responses=True,
-            protocol=2,
+            host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB,
+            decode_responses=True, protocol=2,
         )
         yield conn
+        conn.close()
         # 清理
         for key in conn.keys(LOCK_KEY_PATTERN):
             conn.delete(key)

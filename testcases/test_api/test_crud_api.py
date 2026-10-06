@@ -6,11 +6,15 @@
 - fixture 测完自动清理
 - 绝不碰现有数据
 """
+import logging
+
 import allure
 import pytest
 import uuid
 
 from api.crud_api import SysConfigCrudApi, SysRoleCrudApi
+
+logger = logging.getLogger(__name__)
 
 
 def unique_key(prefix="autotest"):
@@ -39,10 +43,11 @@ class TestSysConfigCrud:
                 if ids:
                     api.delete(ids)
             except Exception as e:
-                print(f"cleanup failed: {e}")
-        _clean()  # 测试前清一次
+                logger.warning(f"cleanup config failed: {e}")
+
+        _clean()
         yield
-        _clean()  # 测试后再清一次
+        _clean()
 
     @allure.title("参数 CRUD 完整链路：新增→查询→编辑→删除")
     def test_full_crud(self, api):
@@ -65,17 +70,14 @@ class TestSysConfigCrud:
         resp = api.update(config_id, key, value2, remark="autotest update")
         assert resp.json()["code"] == "00000", f"编辑失败: {resp.json()}"
 
-        # 验证编辑生效
         detail = api.info(config_id).json()
         assert detail["code"] == "00000"
-        assert detail["data"]["paramValue"] == value2, \
-            f"编辑后 paramValue 应为 {value2}，实际 {detail['data']['paramValue']}"
+        assert detail["data"]["paramValue"] == value2
 
         # 4. 删除
         resp = api.delete([config_id])
         assert resp.json()["code"] == "00000", f"删除失败: {resp.json()}"
 
-        # 5. 验证已删除
         found = api.find_by_key(key)
         assert found is None, "删除后不应再查到"
 
@@ -123,7 +125,8 @@ class TestSysRoleCrud:
                 if ids:
                     api.delete(ids)
             except Exception as e:
-                print(f"cleanup failed: {e}")
+                logger.warning(f"cleanup role failed: {e}")
+
         _clean()
         yield
         _clean()
@@ -132,17 +135,14 @@ class TestSysRoleCrud:
     def test_full_crud(self, api):
         name = unique_key("autotest_role")
 
-        # 1. 新增
         resp = api.create(name, remark="autotest 角色")
         assert resp.json()["code"] == "00000", f"新增失败: {resp.json()}"
 
-        # 2. 查询
         found = api.find_by_name(name)
-        assert found is not None, f"新增后应查到 {name}"
+        assert found is not None
         assert found["roleName"] == name
         role_id = found["roleId"]
 
-        # 3. 编辑
         new_name = name + "_upd"
         resp = api.update(role_id, new_name, remark="autotest 更新")
         assert resp.json()["code"] == "00000", f"编辑失败: {resp.json()}"
@@ -151,11 +151,9 @@ class TestSysRoleCrud:
         assert detail["code"] == "00000"
         assert detail["data"]["roleName"] == new_name
 
-        # 4. 删除
         resp = api.delete([role_id])
         assert resp.json()["code"] == "00000"
 
-        # 5. 验证已删除
         found = api.find_by_name(new_name)
         assert found is None
 

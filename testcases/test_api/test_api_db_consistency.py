@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """A. 接口 → DB 强一致：CRUD 后验证数据真的落库"""
+import logging
+
 import allure
 import pytest
 import uuid
 
 from api.crud_api import SysConfigCrudApi, SysRoleCrudApi
+
+logger = logging.getLogger(__name__)
 
 
 def unique_key(prefix="autotest"):
@@ -32,16 +36,18 @@ class TestApiDbConsistency:
                 ids = [r["id"] for r in records if str(r.get("paramKey", "")).startswith("autotest_")]
                 if ids:
                     config_api.delete(ids)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"cleanup config failed: {e}")
+
             try:
                 body = role_api.page(role_name="autotest_").json()
                 records = body.get("data", {}).get("records", [])
                 ids = [r["roleId"] for r in records if str(r.get("roleName", "")).startswith("autotest_")]
                 if ids:
                     role_api.delete(ids)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"cleanup role failed: {e}")
+
         _clean()
         yield
         _clean()
@@ -52,9 +58,7 @@ class TestApiDbConsistency:
         resp = config_api.create(key, "db_value", remark="db_check")
         assert resp.json()["code"] == "00000"
 
-        row = db.query_one(
-            "SELECT * FROM tz_sys_config WHERE param_key = %s", (key,)
-        )
+        row = db.query_one("SELECT * FROM tz_sys_config WHERE param_key = %s", (key,))
         assert row is not None, f"接口返回成功但 DB 查不到 {key}"
         assert row["param_value"] == "db_value"
         assert row["remark"] == "db_check"

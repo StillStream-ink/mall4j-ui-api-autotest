@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 """Batch3 APIs"""
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class CategoryApi:
     def __init__(self, client):
         self.client = client

@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """Batch3 pages: product sub-modules + system sub-modules"""
 from pages.base_page import BasePage
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class _Base(BasePage):
     TABLE_ROWS = ".el-table__row"
     TABLE_HEADERS = ".el-table__header th"

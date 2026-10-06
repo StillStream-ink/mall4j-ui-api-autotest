@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """CRUD APIs: sys config + sys role"""
 from api.client import APIClient
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class SysConfigCrudApi:
     """系统-参数管理 CRUD"""
 

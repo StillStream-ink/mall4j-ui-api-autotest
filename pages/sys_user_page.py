@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """Sys user (admin) page"""
 from pages.base_page import BasePage
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class SysUserPage(BasePage):
     PATH = "/sys/user"
 

@@ -51,10 +51,18 @@ class BasePage:
         return self.page.locator(locator).first.inner_text()
 
     def is_visible(self, locator: str) -> bool:
+        """检查元素是否可见
+
+        只在"元素不存在 / 超时"时返回 False，
+        其他异常（网络错误、浏览器崩溃）往上抛，避免掩盖真实问题。
+        """
         try:
             return self.page.locator(locator).first.is_visible()
-        except Exception:
-            return False
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "timeout" in err_msg or "not found" in err_msg or "no element" in err_msg:
+                return False
+            raise
 
     # ---------- 断言 ----------
     def expect_visible(self, locator: str, timeout: int = 10000):

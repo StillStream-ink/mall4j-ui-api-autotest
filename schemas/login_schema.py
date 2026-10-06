@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
-"""JSON Schema: Mall4j API contracts"""
+"""JSON Schema: Mall4j API contracts
 
-# 通用响应外壳
+用途：
+- 校验接口返回结构是否符合契约
+- 后端改字段名/类型时，Schema 校验会立即失败
+"""
+
+# 通用响应外壳（所有接口都套这一层）
 BASE_RESPONSE = {
     "type": "object",
     "required": ["code", "success"],
@@ -10,7 +15,7 @@ BASE_RESPONSE = {
         "success": {"type": "boolean"},
         "fail": {"type": ["boolean", "null"]},
         "msg": {"type": ["string", "null"]},
-        "data": {},
+        "data": {"type": ["object", "null"]},   # object 或 null
     },
 }
 
@@ -46,7 +51,7 @@ LOGIN_FAIL_SCHEMA = {
     },
 }
 
-# 分页响应
+# 分页响应（适用于所有分页查询接口）
 PAGE_SCHEMA = {
     "type": "object",
     "required": ["code", "data", "success"],

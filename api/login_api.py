@@ -2,11 +2,6 @@
 """Mall4j 后台登录接口封装"""
 from api.client import APIClient
 from common.crypto import encrypt_password
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class LoginApi:
     def __init__(self, client: APIClient):
         self.client = client

@@ -51,9 +51,8 @@ class TestLoginRateLimit:
     @pytest.fixture
     def r(self):
         conn = redis.Redis(
-            host=REDIS_HOST, port=REDIS_PORT,
-            decode_responses=True,
-            protocol=2,
+            host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB,
+            decode_responses=True, protocol=2,
         )
         yield conn
         for key in conn.keys(LOCK_KEY_PATTERN):

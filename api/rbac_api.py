@@ -4,11 +4,6 @@ import uuid
 
 from api.client import APIClient
 from common.crypto import encrypt_password
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class SysUserCrudApi:
     """系统-管理员 CRUD"""
 

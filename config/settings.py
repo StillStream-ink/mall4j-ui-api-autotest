@@ -6,12 +6,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ============ URLs ============
-# 本地后台管理前端
 WEB_URL = os.getenv("MALL4J_WEB_URL", "http://localhost:9527")
-# 本地后台管理后端 API
 API_URL = os.getenv("MALL4J_API_URL", "http://localhost:8085")
 
-# 备用：线上演示环境
 DEMO_WEB_URL = "https://b2b2b-pc-demo.mall4j.com/"
 DEMO_API_URL = "https://b2b2b-pc-demo.mall4j.com/"
 
@@ -35,6 +32,11 @@ DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "Root@123456")
 DB_NAME = os.getenv("DB_NAME", "yami_shops")
 
+# ============ Redis ============
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+
 # ============ Paths ============
 ALLURE_RESULTS_DIR = BASE_DIR / "reports" / "allure-results"
 SCREENSHOT_DIR = BASE_DIR / "reports" / "screenshots"
@@ -43,6 +45,5 @@ LOG_DIR = BASE_DIR / "logs"
 # ============ Notification ============
 FEISHU_WEBHOOK = os.getenv("FEISHU_WEBHOOK", "")
 
-# Ensure dirs exist
 for d in (ALLURE_RESULTS_DIR, SCREENSHOT_DIR, LOG_DIR):
     d.mkdir(parents=True, exist_ok=True)

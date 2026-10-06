@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 """Batch2 APIs: order + sys user/role/menu"""
-from common.logger import get_logger
-
-logger = get_logger(__name__)
-
-
 class OrderApi:
     def __init__(self, client):
         self.client = client

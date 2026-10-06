@@ -61,13 +61,17 @@ class OrderDetailPage(BasePage):
         self.page.wait_for_timeout(2500)
 
     def is_detail_dialog_visible(self):
+        """判断详情弹窗是否可见"""
         loc = self.page.locator(self.DIALOG)
         if loc.count() == 0:
             return False
         try:
             return loc.first.is_visible()
-        except Exception:
-            return False
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "timeout" in err_msg or "not found" in err_msg:
+                return False
+            raise
 
     def get_detail_order_no(self):
         loc = self.page.locator(self.DETAIL_ORDER_NO)
