@@ -11,16 +11,11 @@ import allure
 import pytest
 import redis
 
-from config.settings import API_URL
+from config.settings import API_URL, REDIS_HOST, REDIS_PORT, REDIS_DB
 from api.client import APIClient
 from api.login_api import LoginApi
 
-REDIS_HOST = "127.0.0.1"
-REDIS_PORT = 6379
 LOCK_KEY_PATTERN = "*checkUserInputErrorPassword*"
-
-# 从源码 PasswordCheckManager.java 得出：
-# 阈值 count > 10，即第 12 次尝试触发
 MAX_TRIES_BEFORE_LOCK = 11
 
 

@@ -171,7 +171,7 @@ pytest testcases/test_ui/test_weak_network.py::TestWeakNetwork::test_offline_log
 - 后端逻辑缺陷：2（BUG-001、BUG-002）
 - 前端逻辑缺陷：1（BUG-003）
 
-**测试有效性**：约 150 条用例发现 3 个缺陷，缺陷密度约 2%。
+**测试有效性**：约 197 条用例发现 3 个缺陷，缺陷密度约 2%。
 
 ---
 

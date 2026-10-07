@@ -5,6 +5,7 @@ import pytest
 
 from config.settings import WEB_URL, ADMIN
 from pages.login_dialog_page import LoginDialogPage
+from playwright.sync_api import expect
 
 pytestmark = [
     pytest.mark.ui,

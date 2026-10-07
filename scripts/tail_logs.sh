@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
-"""写入 tail_logs.sh"""
-from pathlib import Path
-
-content = '''#!/bin/bash
+#!/bin/bash
 # Mall4j 日志查看脚本
 LOG_DIR="${LOG_DIR:-/var/log/mall4j}"
+
+if [ ! -d "$LOG_DIR" ]; then
+    LOG_DIR="E:/mall4j-master/logs"
+fi
 
 case "$1" in
     api)
@@ -28,19 +28,9 @@ case "$1" in
         ;;
     last-error)
         echo "最近 50 条错误日志"
-        grep -h "ERROR" "$LOG_DIR"/*.log | tail -50
+        grep -h "ERROR" "$LOG_DIR"/*.log 2>/dev/null | tail -50
         ;;
     *)
-        echo "用法:"
-        echo "  bash tail_logs.sh api"
-        echo "  bash tail_logs.sh admin"
-        echo "  bash tail_logs.sh error"
-        echo "  bash tail_logs.sh grep <keyword>"
-        echo "  bash tail_logs.sh last-error"
+        echo "用法: bash tail_logs.sh {api|admin|error|grep <kw>|last-error}"
         ;;
 esac
-'''
-
-path = Path(r"E:\\mall4j-ui-api-autotest") / "scripts" / "tail_logs.sh"
-path.write_text(content, encoding="utf-8", newline="\\n")
-print(f"[OK] {path}  ({len(content)} bytes)")
