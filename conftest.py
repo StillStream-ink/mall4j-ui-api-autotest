@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """Global fixtures: UI page + API session + failure screenshot + allure env"""
 import json
+import sys
 from pathlib import Path
 
 import allure
 import pytest
 from playwright.sync_api import sync_playwright
 
+from common.logger import get_logger
 from config.settings import (
     WEB_URL, API_URL, BROWSER, HEADLESS, SLOW_MO,
     DEFAULT_TIMEOUT, ADMIN,
@@ -14,6 +16,8 @@ from config.settings import (
 )
 from api.client import APIClient
 from api.login_api import LoginApi
+
+logger = get_logger(__name__)
 
 
 # ============================================================
@@ -44,10 +48,12 @@ def page(browser):
 # ============================================================
 @pytest.fixture(scope="session")
 def api_client():
-    return APIClient(base_url=API_URL)
+    client = APIClient(base_url=API_URL)
+    yield client
+    client.close()
 
 
-@pytest.fixture(scope="function")   # ← 从 session 改成 function
+@pytest.fixture(scope="function")
 def api_session(api_client):
     """每条测试前重新登录，保证 token 有效"""
     login = LoginApi(api_client)
@@ -57,6 +63,7 @@ def api_session(api_client):
     token = body["data"]["accessToken"]
     api_client.set_token(token)
     return api_client
+
 
 # ============================================================
 # pytest hooks: 失败自动截图
@@ -96,38 +103,40 @@ def capture_screenshot(request):
             attachment_type=allure.attachment_type.PNG,
         )
     except Exception as e:
-        print(f"screenshot failed: {e}")
+        logger.warning(f"screenshot failed: {e}")
 
 
 # ============================================================
 # pytest hooks: Allure 环境信息自动生成
 # ============================================================
 def pytest_sessionfinish(session, exitstatus):
-    ALLURE_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        ALLURE_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    env = {
-        "Project": "Mall4j UI + API Autotest",
-        "Web_URL": WEB_URL,
-        "API_URL": API_URL,
-        "Browser": BROWSER,
-        "Headless": str(HEADLESS),
-        "Python": "3.11.5",
-    }
-    (ALLURE_RESULTS_DIR / "environment.properties").write_text(
-        "\n".join(f"{k}={v}" for k, v in env.items()),
-        encoding="utf-8",
-    )
+        env = {
+            "Project": "Mall4j UI + API Autotest",
+            "Web_URL": WEB_URL,
+            "API_URL": API_URL,
+            "Browser": BROWSER,
+            "Headless": str(HEADLESS),
+            "Python": sys.version.split()[0],
+        }
+        (ALLURE_RESULTS_DIR / "environment.properties").write_text(
+            "\n".join(f"{k}={v}" for k, v in env.items()),
+            encoding="utf-8",
+        )
 
-    executor = {
-        "name": "Local",
-        "type": "pytest",
-        "buildName": "local-run",
-    }
-    (ALLURE_RESULTS_DIR / "executor.json").write_text(
-        json.dumps(executor, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
+        executor = {
+            "name": "Local",
+            "type": "pytest",
+            "buildName": "local-run",
+        }
+        (ALLURE_RESULTS_DIR / "executor.json").write_text(
+            json.dumps(executor, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception as e:
+        logger.warning(f"生成 Allure 环境信息失败: {e}")
 
 
 # ============================================================
@@ -147,9 +156,10 @@ def db():
 # ============================================================
 @pytest.fixture(scope="function")
 def valid_dvy(api_session):
-    """获取一个有效的快递公司"""
+    """获取一个有效的快递公司（空列表时跳过测试）"""
     resp = api_session.get("/admin/delivery/list")
     body = resp.json()
     assert body["code"] == "00000", f"获取快递公司失败: {body}"
-    assert len(body["data"]) > 0, "快递公司列表为空"
+    if not body["data"]:
+        pytest.skip("快递公司列表为空，跳过依赖快递公司的测试")
     return body["data"][0]
