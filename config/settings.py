@@ -6,9 +6,12 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ============ URLs ============
+# 本地后台管理前端
 WEB_URL = os.getenv("MALL4J_WEB_URL", "http://localhost:9527")
+# 本地后台管理后端 API
 API_URL = os.getenv("MALL4J_API_URL", "http://localhost:8085")
 
+# 备用：线上演示环境
 DEMO_WEB_URL = "https://b2b2b-pc-demo.mall4j.com/"
 DEMO_API_URL = "https://b2b2b-pc-demo.mall4j.com/"
 
@@ -36,6 +39,10 @@ DB_NAME = os.getenv("DB_NAME", "yami_shops")
 REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+
+# ============ Crypto ============
+# AES 加密密钥（与前端 crypto.js 保持一致）
+AES_KEY = os.getenv("MALL4J_AES_KEY", "-mall4j-password")
 
 # ============ Paths ============
 ALLURE_RESULTS_DIR = BASE_DIR / "reports" / "allure-results"

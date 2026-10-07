@@ -94,9 +94,6 @@ class TestWeakNetwork:
         expect(page.locator(".el-message, .el-notification, .el-message-box").first).to_be_visible(timeout=8000)
 
 
-
-
-
     @allure.title("[弱网] 断网恢复后重试登录成功")
     def test_recover_after_offline(self, page):
         page.goto(WEB_URL, wait_until="domcontentloaded", timeout=60000)
@@ -105,25 +102,20 @@ class TestWeakNetwork:
         login = LoginDialogPage(page)
         login.fill_credentials(ADMIN["username"], ADMIN["password"])
 
-        # 断网
+        # 断网 → 点登录（失败）
         page.context.set_offline(True)
         page.wait_for_timeout(500)
         login.click_login()
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(2000)   # 给失败请求一点响应时间
 
-        # 恢复网络
-        # 改前
+        # 恢复网络 → 重新登录
         page.context.set_offline(False)
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(500)   # 给网络恢复一点时间
 
-        # 改后（等待网络恢复后重试）
-        page.context.set_offline(False)
-        page.wait_for_timeout(500)   
-
-        # 重新填（可能已清空）
+        # 重新填账号密码（断网失败后表单可能被清空）
         if page.locator(".login .el-input input").first.is_visible():
             login.fill_credentials(ADMIN["username"], ADMIN["password"])
         login.click_login()
 
-        # 应登录成功
+        # 断言：登录成功跳转 /home
         page.wait_for_url("**/home", timeout=15000)

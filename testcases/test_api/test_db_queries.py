@@ -91,7 +91,7 @@ class TestDBQueries:
 
     @allure.title("[DB] 每个订单应有至少 1 个订单项")
     def test_order_items_relation(self, db):
-        """校验：不应存在"无订单项"的孤儿订单"""
+        """校验：不应存在'无订单项'的孤儿订单"""
         rows = db.query_all("""
             SELECT o.order_number FROM tz_order o
             LEFT JOIN tz_order_item oi ON o.order_number = oi.order_number
@@ -103,4 +103,5 @@ class TestDBQueries:
             "\n".join(str(r["order_number"]) for r in rows[:5]),
             name="关联校验",
         )
-        assert len(rows) == 0, f"发现 {len(rows)} 个订单无订单项：{[r['order_number'] for r in rows[:3]]}"
+        assert len(rows) == 0, \
+            f"发现 {len(rows)} 个订单无订单项：{[r['order_number'] for r in rows[:3]]}"

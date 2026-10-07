@@ -56,11 +56,14 @@ class TestProduct:
         rows = product_page.get_row_count()
         assert rows > 0, "清空后应恢复列表"
 
-    @allure.title("点第一行修改按钮打开弹窗")
+    @allure.title("点第一行修改按钮跳转到编辑页")
     def test_click_edit(self, product_page):
+        original_url = product_page.page.url
         product_page.click_first_edit()
         product_page.page.wait_for_timeout(2000)
-        # 编辑弹窗或跳转后应该出现"产品名字"输入框
-        # 具体等 F12 再看，先只验证点击不报错
-        assert product_page.page.url  # 简单占位
-        
+        # 断言：URL 发生变化（跳转到编辑页）
+        current_url = product_page.page.url
+        assert current_url != original_url, \
+            f"点击修改后 URL 应变化，原 URL: {original_url}，当前: {current_url}"
+        assert "prod" in current_url.lower(), \
+            f"编辑页 URL 应包含 prod，实际: {current_url}"

@@ -65,13 +65,11 @@ class TestTransport:
         p.search_keyword("不存在XYZ123")
         assert p.get_row_count() == 0
 
-    @allure.title("点第一行修改按钮")
-    def test_click_edit(self, logged_page):
-        p = TransportPage(logged_page)
-        p.open()
-        p.click_first_edit()
-        assert logged_page.url
-
+@allure.title("点第一行修改按钮打开编辑弹窗")
+def test_click_edit(self, product_page):
+    product_page.click_first_edit()
+    # 等编辑弹窗 / 页面出现"产品名字"输入框
+    expect(product_page.page.locator("input[placeholder*='产品名字'], .el-dialog")).to_be_visible(timeout=5000)
 
 @allure.feature("门店管理-轮播图")
 @pytest.mark.ui
