@@ -4,8 +4,8 @@ import allure
 import pytest
 
 from config.settings import ADMIN
-from pages.login_dialog_page import LoginDialogPage
-from pages.batch3_page import (
+from pages.admin.login_dialog_page import LoginDialogPage
+from pages.admin.batch3_page import (
     CategoryPage, ProdTagPage, ProdCommPage, SpecPage,
     SysConfigPage, AreaPage, SysLogPage,
 )

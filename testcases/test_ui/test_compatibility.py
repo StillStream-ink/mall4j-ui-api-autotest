@@ -10,7 +10,7 @@ import allure
 import pytest
 
 from config.settings import ADMIN, BROWSER
-from pages.login_dialog_page import LoginDialogPage
+from pages.admin.login_dialog_page import LoginDialogPage
 
 pytestmark = [
     pytest.mark.ui,

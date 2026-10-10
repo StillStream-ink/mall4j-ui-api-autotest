@@ -2,13 +2,12 @@
 """Shop management UI tests (5 sub-modules)"""
 import allure
 import pytest
-
+from playwright.sync_api import expect
 from config.settings import ADMIN
-from pages.login_dialog_page import LoginDialogPage
-from pages.shop_page import (
+from pages.admin.login_dialog_page import LoginDialogPage
+from pages.admin.shop_page import (
     SelfPickupPage, TransportPage, CarouselPage, HotSearchPage, NoticePage,
 )
-
 
 @pytest.fixture
 def logged_page(page):
@@ -21,7 +20,6 @@ def logged_page(page):
 @allure.feature("门店管理-自提点")
 @pytest.mark.ui
 class TestSelfPickup:
-
     @allure.title("打开自提点列表")
     def test_open(self, logged_page):
         p = SelfPickupPage(logged_page)
@@ -41,7 +39,6 @@ class TestSelfPickup:
 @allure.feature("门店管理-运费模板")
 @pytest.mark.ui
 class TestTransport:
-
     @allure.title("打开运费模板列表")
     def test_open(self, logged_page):
         p = TransportPage(logged_page)
@@ -65,16 +62,10 @@ class TestTransport:
         p.search_keyword("不存在XYZ123")
         assert p.get_row_count() == 0
 
-@allure.title("点第一行修改按钮打开编辑弹窗")
-def test_click_edit(self, product_page):
-    product_page.click_first_edit()
-    # 等编辑弹窗 / 页面出现"产品名字"输入框
-    expect(product_page.page.locator("input[placeholder*='产品名字'], .el-dialog")).to_be_visible(timeout=5000)
 
 @allure.feature("门店管理-轮播图")
 @pytest.mark.ui
 class TestCarousel:
-
     @allure.title("打开轮播图列表")
     def test_open(self, logged_page):
         p = CarouselPage(logged_page)
@@ -88,7 +79,6 @@ class TestCarousel:
 @allure.feature("门店管理-热搜")
 @pytest.mark.ui
 class TestHotSearch:
-
     @allure.title("打开热搜列表")
     def test_open(self, logged_page):
         p = HotSearchPage(logged_page)
@@ -107,7 +97,6 @@ class TestHotSearch:
 @allure.feature("门店管理-公告")
 @pytest.mark.ui
 class TestNotice:
-
     @allure.title("打开公告列表")
     def test_open(self, logged_page):
         p = NoticePage(logged_page)

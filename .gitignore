@@ -1,16 +1,46 @@
+# Python cache
 __pycache__/
 *.py[cod]
+
+# Virtual environment
 venv/
 .venv/
+
+# Pytest cache & coverage report
 .pytest_cache/
+.coverage
+
+# Test report output
 reports/
 logs/
 allure-results/
 allure-result/
+allure-report/
+
+# Env secrets
 .env
 .env.*
 !.env.example
+
+# IDE config
 .vscode/
 .idea/
 *.swp
+
+# Log files
 *.log
+
+# DB backup files
+scripts/shell/db_backup/*.sql
+scripts/shell/*.log
+
+# Auto generated failed screenshot, keep manual README images
+screenshots/FAILED_*.png
+
+# Temporary files
+structure.txt
+reports/screenshots/
+
+# JMeter artifacts
+reports/jmeter-report/
+reports/jmeter.jtl

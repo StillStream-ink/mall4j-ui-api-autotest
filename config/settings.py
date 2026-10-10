@@ -7,9 +7,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ============ URLs ============
 # 本地后台管理前端
-WEB_URL = os.getenv("MALL4J_WEB_URL", "http://localhost:9527")
+WEB_URL = os.getenv("MALL4J_WEB_URL", "http://127.0.0.1:9527")
 # 本地后台管理后端 API
-API_URL = os.getenv("MALL4J_API_URL", "http://localhost:8085")
+API_URL = os.getenv("MALL4J_API_URL", "http://127.0.0.1:8085")
+# 买家端 API（8086 前台）
+BUYER_API_URL = os.getenv("MALL4J_BUYER_API_URL", "http://127.0.0.1:8086")
+# 买家端 H5 前端（80）
+BUYER_WEB_URL = os.getenv("MALL4J_BUYER_WEB_URL", "http://127.0.0.1")
 
 # 备用：线上演示环境
 DEMO_WEB_URL = "https://b2b2b-pc-demo.mall4j.com/"
@@ -25,6 +29,12 @@ DEFAULT_TIMEOUT = int(os.getenv("DEFAULT_TIMEOUT", "15000"))
 ADMIN = {
     "username": os.getenv("ADMIN_USERNAME", "admin"),
     "password": os.getenv("ADMIN_PASSWORD", "123456"),
+}
+
+# 买家端账号（8086 前台 API）
+BUYER = {
+    "mobile": os.getenv("BUYER_MOBILE", "13000000001"),
+    "password": os.getenv("BUYER_PASSWORD", "123456"),
 }
 
 # ============ Database ============

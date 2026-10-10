@@ -13,11 +13,10 @@ import redis
 
 from config.settings import API_URL, REDIS_HOST, REDIS_PORT, REDIS_DB
 from api.client import APIClient
-from api.login_api import LoginApi
+from api.admin.login_api import LoginApi
 
 LOCK_KEY_PATTERN = "*checkUserInputErrorPassword*"
 MAX_TRIES_BEFORE_LOCK = 11
-
 
 @allure.feature("后台接口-登录限流")
 @pytest.mark.api

@@ -1,192 +1,366 @@
-# Linux 运维文档
+# 测试环境运维文档
 
-本项目用到的 Linux 命令与脚本。
+> 项目：Mall4j UI + API 自动化测试
+> 运维环境：WSL2 Ubuntu + Windows PowerShell
+> 更新日期：2026-10-10
 
 ---
 
-## 一、环境健康检查
+## 一、运维体系总览
 
-```bash
-bash scripts/check_env.sh
+Mall4j 测试环境涉及 4 个服务 + MySQL + Redis，运维体系包含 3 个 Shell 脚本 + 2 套定时方案。
+
+| 脚本 | 位置 | 用途 |
+|---|---|---|
+| backup_mall4j.sh | scripts/shell/ | 数据库备份，保留 30 天 |
+| check_env.sh | scripts/shell/ | 一键巡检 6 项 |
+| rotate_logs.sh | scripts/shell/ | 日志轮转 |
+
+| 定时方案 | 位置 | 用途 |
+|---|---|---|
+| WSL2 crontab | /var/spool/cron/crontabs/root | WSL2 常驻时执行 |
+| Windows 任务计划 | Mall4j-DailyBackup | WSL2 关闭时兜底 |
+
+---
+
+## 二、环境健康检查
+
+### 2.1 一键巡检
+
+```
+cd /mnt/e/mall4j-ui-api-autotest/scripts/shell
+./check_env.sh
 ```
 
-检查项：
+**检查项（6 项）：**
 
-- 4 个端口（6379/8085/8086/9527）是否监听
-- MySQL 是否连通、表数量
-- Redis 是否连通、key 数量
-- 磁盘使用率
-- 内存占用
+- 4 个服务端口：8086（买家端 API）/ 8085（管理员端 API）/ 80（买家端 H5）/ 9527（管理员端 Vue）
+- MySQL：连接 + 表数量 + 订单总数
+- Redis：端口监听状态
+- 备份文件：最新备份 + 总数
+- JMeter 脚本：是否存在
+- 磁盘：E 盘使用率
 
-用到的命令：
+**巡检输出示例：**
 
-- `netstat -tunlp` / `ss -tunlp` 查看端口监听
-- `mysql -e "SELECT ..."` 数据库连通测试
-- `redis-cli ping` 缓存连通测试
-- `df -h` 磁盘
-- `free -h` 内存
+```
+==========================================
+  Mall4j 环境健康巡检
+  时间: 2026-10-10 16:12:51
+==========================================
 
----
+【1. 服务端口检查】
+  ✅ 买家端 API      (8086) 正常
+  ✅ 管理员端 API    (8085) 正常
+  ✅ 买家端 H5       (80) 正常
+  ✅ 管理员端 Vue    (9527) 正常
 
-## 二、日志查看
+【2. MySQL 数据库检查】
+  ✅ MySQL 连接正常
+  📊 yami_shops 表数量: 43
+  📦 订单总数: 50
 
-```bash
-# 实时查看 API 日志
-bash scripts/tail_logs.sh api
+【3. Redis 缓存检查】
+  ℹ️  Redis 仅监听 127.0.0.1（WSL2 无法直连，符合安全最佳实践）
+      验证方式：Windows PowerShell 执行 netstat -ano | findstr :6379
 
-# 只过滤 ERROR / Exception
-bash scripts/tail_logs.sh error
+【4. 备份文件检查】
+  ✅ 最新备份: yami_shops_20261009_160300.sql (572K)
+  📁 备份总数: 2
 
-# 按关键字过滤
-bash scripts/tail_logs.sh grep "Order"
+【5. 磁盘空间检查】
+  💾 E 盘使用率: 8% (已用 14G / 共 188G)
 
-# 最近 50 条错误
-bash scripts/tail_logs.sh last-error
+==========================================
+  巡检完成
+==========================================
 ```
 
-用到的命令：
+**用到的命令：**
 
-- `tail -f` 实时追踪
-- `grep -E "ERROR|Exception"` 多模式匹配
-- `grep --color=auto` 高亮
-- `head` / `tail` 截取
+- bash -c "echo > /dev/tcp/HOST/PORT" —— 端口连通性测试
+- mysql -h HOST -P PORT -u USER -pPASS -e "SQL" —— 数据库查询
+- du -h / df -h —— 磁盘和文件大小
+- ls -t —— 按时间排序取最新
 
 ---
 
-## 三、测试数据清理
+## 三、数据库备份
 
-```bash
-bash scripts/clean_test_data.sh
+### 3.1 手动备份
+
+```
+cd /mnt/e/mall4j-ui-api-autotest/scripts/shell
+./backup_mall4j.sh
 ```
 
-清理内容：
+备份文件命名：yami_shops_YYYYMMDD_HHMMSS.sql
 
-- MySQL：autotest_ 前缀的 config/role，au_ 前缀的 user
-- Redis：*checkUserInputErrorPassword* 限流 key
+**备份策略：**
 
-用到的命令：
+- mysqldump 整库备份
+- --single-transaction 保证一致性
+- --routines --triggers 包含存储过程和触发器
+- 自动保留最近 30 天，超过自动删除
 
-- `mysql <<EOF` 批量 SQL
-- `redis-cli keys` + `redis-cli del`
-- `while read` 遍历
+### 3.2 恢复数据库
 
----
-
-## 四、批量测试 + 归档
-
-```bash
-bash scripts/batch_test.sh        # 全部
-bash scripts/batch_test.sh api    # 只跑接口
-bash scripts/batch_test.sh ui     # 只跑 UI
+```
+# 从指定备份恢复
+mysql -h 192.168.111.60 -P 3307 -u root -pRoot@123456 yami_shops \
+    < /mnt/e/mall4j-ui-api-autotest/scripts/shell/db_backup/yami_shops_20261009_160300.sql
 ```
 
-归档策略：每次跑完打包 `reports/archive/run_YYYYMMDD_HHMMSS.tar.gz`，自动清理 7 天前的归档。
+### 3.3 验证备份可用
 
-用到的命令：
+```
+# 看 SQL 文件头（确认不是空文件）
+head -20 db_backup/yami_shops_20261009_160300.sql
 
-- `tar -czf` 打包压缩
-- `find ... -mtime +7 -delete` 清理旧文件
-- `date +%Y%m%d_%H%M%S` 时间戳
+# 应该看到：
+# -- MySQL dump 10.13  Distrib 8.0.46, for Linux (x86_64)
+# -- Host: 192.168.111.60    Database: yami_shops
+# /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+```
+
+### 3.4 备份脚本核心逻辑
+
+```
+#!/bin/bash
+DB_HOST="192.168.111.60"
+DB_PORT="3307"
+DB_USER="root"
+DB_PASS="Root@123456"
+DB_NAME="yami_shops"
+
+BACKUP_DIR="/mnt/e/mall4j-ui-api-autotest/scripts/shell/db_backup"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="${BACKUP_DIR}/yami_shops_${DATE}.sql"
+
+[ ! -d "${BACKUP_DIR}" ] && mkdir -p "${BACKUP_DIR}"
+
+mysqldump -h${DB_HOST} -P${DB_PORT} -u${DB_USER} -p${DB_PASS} \
+    --single-transaction --routines --triggers \
+    ${DB_NAME} > "${BACKUP_FILE}"
+
+# 自动清理 30 天前的备份
+find "${BACKUP_DIR}" -name "yami_shops_*.sql" -mtime +30 -delete
+```
 
 ---
 
-## 五、常用 Linux 命令速查
+## 四、日志轮转
 
-### 进程 / 端口
+```
+cd /mnt/e/mall4j-ui-api-autotest/scripts/shell
+./rotate_logs.sh
+```
 
-```bash
-# 查看 Java 进程
-ps aux | grep java
+**处理目录：**
+
+- /mnt/e/mall4j-ui-api-autotest/logs（应用日志）
+- /mnt/e/mall4j-ui-api-autotest/reports（测试报告）
+
+**策略：**
+
+- 7 天前的 .log 文件自动 gzip 压缩
+- 30 天前的 .gz 文件自动删除
+- 输出当前目录占用
+
+**输出示例：**
+
+```
+📂 处理目录: /mnt/e/mall4j-ui-api-autotest/logs
+  🗜️  压缩 7 天前日志: 0 个
+  🗑️  删除 30 天前归档: 0 个
+  💾 当前占用: 28M
+```
+
+---
+
+## 五、定时任务
+
+### 5.1 WSL2 crontab
+
+```
+# 编辑
+crontab -e
+
+# 查看
+crontab -l
+```
+
+**配置内容：**
+
+```
+# ============ Mall4j 定时任务 ============
+
+# 每天凌晨 2 点备份数据库
+0 2 * * * /mnt/e/mall4j-ui-api-autotest/scripts/shell/backup_mall4j.sh >> /mnt/e/mall4j-ui-api-autotest/scripts/shell/backup_run.log 2>&1
+
+# 每周日凌晨 3 点日志轮转
+0 3 * * 0 /mnt/e/mall4j-ui-api-autotest/scripts/shell/rotate_logs.sh >> /mnt/e/mall4j-ui-api-autotest/scripts/shell/rotate_run.log 2>&1
+
+# 每天早 9 点环境巡检
+0 9 * * * /mnt/e/mall4j-ui-api-autotest/scripts/shell/check_env.sh >> /mnt/e/mall4j-ui-api-autotest/scripts/shell/check_run.log 2>&1
+```
+
+**实测：** 加一条 * * * * * 测试任务，连续 3 分钟写入 3 条时间戳，验证 crontab 正常工作。
+
+### 5.2 Windows 任务计划程序
+
+**为什么需要：** WSL2 关闭后 crontab 不跑，生产环境必须用 Windows 兜底。
+
+**创建任务（管理员 PowerShell）：**
+
+```
+$action = New-ScheduledTaskAction `
+    -Execute "wsl.exe" `
+    -Argument "-d Ubuntu -- bash -c '/mnt/e/mall4j-ui-api-autotest/scripts/shell/backup_mall4j.sh'"
+
+$trigger = New-ScheduledTaskTrigger -Daily -At 2am
+
+Register-ScheduledTask `
+    -TaskName "Mall4j-DailyBackup" `
+    -Action $action `
+    -Trigger $trigger `
+    -Description "Mall4j 每日数据库备份"
+```
+
+**验证：**
+
+```
+Get-ScheduledTask -TaskName "Mall4j-DailyBackup"
+Start-ScheduledTask -TaskName "Mall4j-DailyBackup"
+Start-Sleep -Seconds 30
+Get-Content E:\mall4j-ui-api-autotest\scripts\shell\backup_run.log -Tail 5
+```
+
+**实测：** 手动触发后 30 秒内生成 572K 备份文件。
+
+---
+
+## 六、一键快捷脚本（Windows）
+
+双击即可执行：
+
+| 文件 | 用途 |
+|---|---|
+| scripts\check_env.bat | 一键巡检（调 WSL2 脚本） |
+| scripts\backup_db.bat | 一键备份（调 WSL2 脚本） |
+| scripts\start_all.ps1 | 一键启动 4 个服务 |
+| scripts\stop_all.ps1 | 一键关闭所有服务 |
+
+**check_env.bat 内容：**
+
+```
+@echo off
+chcp 65001 > nul
+echo Running Mall4j env check in WSL2...
+wsl -d Ubuntu -- bash -c "cd /mnt/e/mall4j-ui-api-autotest/scripts/shell && ./check_env.sh"
+pause
+```
+
+---
+
+## 七、常用命令速查
+
+### 7.1 进程 / 端口
+
+```
+# WSL2 查端口（通过 Windows IP）
+timeout 2 bash -c "echo > /dev/tcp/192.168.111.60/8086" && echo "OK"
+
+# Windows 查端口
+netstat -ano | findstr :8086
+
+# 查 Java 进程（Windows）
 jps -l
-
-# 查看端口占用
-netstat -tunlp | grep 8085
-lsof -i:8085
-
-# 杀掉进程
-kill -9 <PID>
 ```
 
-### 日志
+### 7.2 MySQL
 
-```bash
-# 实时查看
-tail -f /var/log/mall4j/api.log
+```
+# WSL2 连 Windows MySQL
+mysql -h 192.168.111.60 -P 3307 -u root -pRoot@123456
 
-# 查看最近 100 行
-tail -100 api.log
+# 查表字符集
+SELECT TABLE_NAME, TABLE_COLLATION FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = 'yami_shops';
 
-# 过滤错误
-grep -n "ERROR" api.log
+# 查订单数
+SELECT COUNT(*) FROM tz_order;
+```
+
+### 7.3 Redis
+
+```
+# WSL2 清 Redis（用 Python）
+python -c "import redis; redis.Redis(host='192.168.111.60', port=6379, db=0, protocol=2).flushdb()"
+
+# Windows 查 Redis
+netstat -ano | findstr :6379
+```
+
+### 7.4 日志
+
+```
+# 实时看
+tail -f /mnt/e/mall4j-ui-api-autotest/logs/autotest.log
+
+# 看最后 100 行
+tail -100 autotest.log
+
+# 过滤 ERROR
+grep -n "ERROR" autotest.log
 
 # 统计错误数
-grep -c "ERROR" api.log
-
-# 时间范围
-sed -n '/2026-10-02 10:00/,/2026-10-02 11:00/p' api.log
-
-# 组合过滤
-tail -f api.log | grep -E "ERROR|Exception" | grep -v "健康检查"
+grep -c "ERROR" autotest.log
 ```
 
-### 磁盘 / 内存
+### 7.5 磁盘
 
-```bash
-df -h          # 磁盘使用
-du -sh *       # 当前目录各子项大小
-du -sh /var/log/*  # 日志目录大小
-free -h        # 内存
-top            # 进程资源
 ```
-
-### 文件
-
-```bash
-find . -name "*.log" -mtime +7        # 7 天前的日志
-find . -name "*.log" -size +100M      # 大于 100M
-gzip / gunzip                          # 压缩
-tar -czf / tar -xzf                    # 打包
-```
-
-### 网络
-
-```bash
-ping 127.0.0.1
-curl -v http://localhost:8085/doc.html
-telnet 127.0.0.1 8085
-```
-
-### 系统信息
-
-```bash
-uname -a         # 内核
-cat /etc/os-release  # 发行版
-uptime           # 运行时长 + 负载
-whoami           # 当前用户
+df -h /mnt/e           # E 盘使用率
+du -sh /mnt/e/mall4j-ui-api-autotest/logs  # 日志目录大小
 ```
 
 ---
 
-## 六、部署流程（参考）
+## 八、常见问题排查
 
-```bash
-# 1. 检查环境
-bash scripts/check_env.sh
+| 问题 | 原因 | 解决 |
+|---|---|---|
+| WSL2 无法连 MySQL | Host 'xxx' is not allowed | MySQL 里 UPDATE mysql.user SET host='%' WHERE user='root' |
+| WSL2 无法连 MySQL | 防火墙拦截 | 管理员 PowerShell New-NetFirewallRule -LocalPort 3307 ... |
+| Redis 巡检失败 | 只监听 127.0.0.1 | 不改（安全配置），脚本里输出说明而非报错 |
+| crontab 不自动执行 | WSL2 未启用 systemd | /etc/wsl.conf 加 [boot] + systemd=true |
+| crontab 关闭 WSL2 后不跑 | WSL2 已知限制 | 配 Windows 任务计划程序兜底 |
+| E 盘 /mnt/e 丢失 | WSL2 挂载失效 | wsl --shutdown 后重进；或 sudo mount -t drvfs E: /mnt/e |
 
-# 2. 启动 4 个服务（后台运行）
-nohup java -jar yami-shop-api.jar > logs/api.log 2>&1 &
-nohup java -jar yami-shop-admin.jar > logs/admin.log 2>&1 &
-nohup redis-server > logs/redis.log 2>&1 &
+---
 
-# 3. 查看启动状态
-bash scripts/check_env.sh
+## 九、踩坑记录
 
-# 4. 有问题时看日志
-bash scripts/tail_logs.sh error
+| 坑 | 问题 | 根因 | 解决 |
+|---|---|---|---|
+| 坑 1 | WSL2 无法连通宿主机 MySQL | WSL2 回环地址指向子系统自身 | 用 Windows 局域网 IP 192.168.111.60 |
+| 坑 2 | MySQL 报 Host is not allowed | MySQL 权限表只有 root@localhost | UPDATE mysql.user SET host='%' WHERE user='root' |
+| 坑 3 | crontab 不自动执行 | 旧版 WSL2 无 systemd | /etc/wsl.conf 加 [boot] + systemd=true |
+| 坑 4 | WSL2 关闭后定时任务不跑 | WSL2 已知限制 | Windows 任务计划程序兜底 |
+| 坑 5 | E 盘挂载丢失 | WSL2 重启后挂载失效 | wsl --shutdown 或手动 mount -t drvfs |
+| 坑 6 | MySQL 表存不了 Emoji | 表级字符集 utf8mb3 | 建议 ALTER TABLE ... CONVERT TO utf8mb4（未执行，保留 BUG-004 现场） |
 
-# 5. 跑测试
-bash scripts/batch_test.sh all
+---
 
-# 6. 看报告
-allure serve reports/allure-results
-```
+## 十、与 OpenCart 项目的运维差异
+
+| 维度 | OpenCart 项目 | Mall4j 项目 |
+|---|---|---|
+| 部署方式 | XAMPP（Apache + MariaDB 单服务） | 4 个独立服务（8085/8086/80/9527） |
+| 数据库 | MariaDB | MySQL 8.0（端口 3307） |
+| 运维脚本环境 | WSL2 Ubuntu | WSL2 Ubuntu |
+| 巡检对象 | Apache + MySQL + 备份 | 4 个端口 + MySQL + Redis + 备份 + JMeter + 磁盘 |
+| 定时方案 | crontab | crontab + Windows 任务计划程序（双方案） |
+
+**核心差异：** Mall4j 是分布式部署（前后端分离 + 双端），巡检需覆盖 4 个端口，比 OpenCart 单体架构复杂。

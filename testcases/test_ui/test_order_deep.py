@@ -4,8 +4,8 @@ import allure
 import pytest
 
 from config.settings import ADMIN
-from pages.login_dialog_page import LoginDialogPage
-from pages.order_detail_page import OrderDetailPage
+from pages.admin.login_dialog_page import LoginDialogPage
+from pages.admin.order_detail_page import OrderDetailPage
 
 
 @pytest.fixture

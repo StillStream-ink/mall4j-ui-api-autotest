@@ -4,11 +4,11 @@ import allure
 import pytest
 
 from config.settings import ADMIN
-from pages.login_dialog_page import LoginDialogPage
-from pages.order_page import OrderPage
-from pages.sys_user_page import SysUserPage
-from pages.sys_role_page import SysRolePage
-from pages.sys_menu_page import SysMenuPage
+from pages.admin.login_dialog_page import LoginDialogPage
+from pages.admin.order_page import OrderPage
+from pages.admin.sys_user_page import SysUserPage
+from pages.admin.sys_role_page import SysRolePage
+from pages.admin.sys_menu_page import SysMenuPage
 
 
 @pytest.fixture

@@ -1,104 +1,105 @@
 # Mall4j UI + API 自动化测试
 
-> 基于 Playwright + Pytest 的电商系统双轨自动化测试项目
+> 基于 Playwright + Pytest + JMeter 的电商系统双端三轨自动化测试项目
 
-[![Unit Tests](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml/badge.svg)](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml)
-![Tests](https://img.shields.io/badge/tests-197%20cases-blue)
-![Bugs](https://img.shields.io/badge/bugs-3%20found-red)
+![Tests](https://img.shields.io/badge/tests-236%20cases-blue)
+![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
+![Bugs](https://img.shields.io/badge/bugs-4%20found-red)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Playwright](https://img.shields.io/badge/playwright-1.63-green)
-![Pytest](https://img.shields.io/badge/pytest-9.1-orange)
+![JMeter](https://img.shields.io/badge/JMeter-5.6.3-red)
 
 ---
 
 ## 项目简介
 
-针对本地部署的 Mall4j 电商系统（Spring Boot 4 + Vue3）构建的自动化测试项目。
+针对本地部署的 Mall4j 电商系统（Spring Boot 4 + Vue3 + Uniapp）构建的自动化测试项目，覆盖**管理员后台 + 买家端双端**，**API + UI + 性能**三轨，合计 **236 条**用例。
 
-- UI 与 API 双轨架构，共用配置、日志、报告、通知
-- 数据驱动 + 契约 + 性能三重验证
-- 接口 + 数据库双重断言，穿透到数据层验证一致性
-- 数据工厂自建自清，不依赖手工造数据
-- 弱网 + 兼容性 + RBAC + 缓存一致性 + 多表关联专项测试
-- 通过订单状态机、限流、弱网测试发现 3 个真实缺陷
+- **双端覆盖**：管理员后台（8085）+ 买家端（8086）
+- **三轨架构**：API + UI + JMeter 性能压测
+- **完整链路**：买家端打通"逛 → 加 → 下单 → 查订单"用户旅程
+- **接口 + DB 双重断言**：直连 MySQL 验证数据真的落库
+- **多维度验证**：契约 + 性能 + 边界值 + 安全 + 并发 + 幂等 + 导出
+- **覆盖率 93%**：基于 pytest-cov 统计
+- **JMeter 三档梯度压测**：50/100/200 并发，发现商品列表接口性能拐点
+- **完整运维体系**：WSL2 Shell + crontab + Windows 任务计划程序
+- **发现 4 个真实缺陷**：P0 × 1，P1 × 2，P2 × 1
 
 ---
 
 ## 核心亮点
 
-### 1. UI + API 双轨架构
+### 1. 双端三轨架构
 
-同一工程内两条独立测试轨道，共用配置、日志、报告、通知。
-pytest -m ui # 只跑 UI
-pytest -m api # 只跑接口
-pytest -m weaknetwork # 只跑弱网
-pytest -m compatibility # 只跑兼容性
-pytest -m performance # 只跑性能基线
-pytest testcases/ # 全跑
+```bash
+pytest -m ui           # UI 用例
+pytest -m api          # 接口用例
+pytest testcases/      # 全跑
+jmeter -n -t scripts/jmeter/mall4j_homepage.jmx  # 性能压测
+```
 
+### 2. 买家端完整链路
 
-### 2. 三层验证：数据驱动 + 契约 + 性能
+覆盖 8086 前台用户 API，打通买家完整用户旅程：
 
-- **数据驱动矩阵**：1 条方法覆盖 10 个登录场景
-- **JSON Schema 契约**：后端改字段名立即失败
-- **性能基线**：7 个核心接口响应 < 1s
+- **登录**：AES 加密密码，复用管理员端加密工具
+- **商品浏览 + 搜索**：按标签查列表 + 关键词搜索
+- **购物车 CRUD**：加购、累加、删除
+- **下单**：确认 → 提交 → DB 双重断言
+- **订单查询**：列表 + 详情
+- **异常**：加购超库存、未登录鉴权
+- **边界值**：超长文本、SQL 注入、XSS、Emoji、特殊字符
+- **安全**：XSS 注入、Token 失效、IDOR 越权
+- **并发**：10 线程抢 1 库存
+- **幂等性**：重复提交订单只创建 1 个
 
-### 3. AES 加密复现
+### 3. JMeter 三档梯度压测
 
-分析前端 JS 加密逻辑，用 Python 复现 AES/ECB/Pkcs7，真实模拟客户端登录。
+| 并发 | 请求数 | 错误率 | P99 | 吞吐量 |
+|---|---|---|---|---|
+| 50 | 1500 | 0% | 17ms | 152/s |
+| 100 | 3000 | 0% | 16ms | 298/s |
+| 200 | 6000 | 0% | 608ms | 497/s |
 
-### 4. 数据工厂
+发现：200 并发下商品列表 P99 涨 26 倍，有独立性能瓶颈。
 
-基于 pytest fixture 自动构建和恢复测试数据，不污染环境。
+### 4. 测试环境运维体系
 
-### 5. 接口 + DB 双重断言
+- WSL2 Shell 脚本：备份 / 巡检 / 日志轮转
+- 定时任务：WSL2 crontab + Windows 任务计划程序（双方案实测）
 
-不只校验接口返回，直连 MySQL 验证数据真的落库：
+### 5. 测试覆盖率 93%
 
-    assert resp.json()["code"] == "00000"        # 接口层
-    row = db.query_one("SELECT status FROM tz_order WHERE order_number=%s", (no,))
-    assert row["status"] == 3                    # 数据库层
+![Coverage](screenshots/coverage.png)
 
-### 6. 专项测试
-
-- **弱网**：CDP 模拟 3G / 2G / 断网
-- **兼容性**：Chromium / Firefox / WebKit + 3 分辨率
-- **RBAC 权限**：受限角色 + 用户 + 菜单隔离
-- **Redis 缓存**：token 落 Redis、TTL、key 变更
-- **数据一致性**：CRUD 后 DB 校验、订单全字段
-- **多表关联**：订单金额 = SUM(订单项)、孤儿记录巡检
-
-### 7. 已发现缺陷
+### 6. 已发现缺陷
 
 | ID | 描述 | 严重程度 |
 |---|---|---|
-| [BUG-001](./docs/BUGS.md) | 发货接口缺少订单状态校验 | P0 |
-| [BUG-002](./docs/BUGS.md) | 登录成功后不清除密码错误计数 | P2 |
-| [BUG-003](./docs/BUGS.md) | 断网时前端无网络异常提示 | P1 |
-
-### 8. Linux 运维脚本
-
-3 个版本的环境检查脚本，适配不同平台：
-
-| 脚本 | 平台 | 用途 |
-|---|---|---|
-| `scripts/check_env.sh` | Linux | 生产环境检查 |
-| `scripts/check_env.ps1` | Windows | PowerShell 检查 |
-| `scripts/check_env.py` | 跨平台 | Python 通用版 |
-
-其他脚本：`tail_logs.sh`（日志）、`clean_test_data.sh`（数据清理）、`batch_test.sh`（批量+归档）。
+| BUG-001 | 发货接口缺少订单状态校验 | P0 |
+| BUG-002 | 登录成功后不清除密码错误计数 | P2 |
+| BUG-003 | 断网时前端无网络异常提示 | P1 |
+| BUG-004 | 后端对 Emoji 处理异常 | P1 |
 
 ---
 
 ## 测试报告
 
-### Allure 总览（197 条用例）
+### Allure 总览（236 条用例，100% 通过）
 
 ![Allure Overview](screenshots/allure-overview.png)
 
-### 用例详情
+### 按模块分组（Behaviors）
 
-![Allure Detail](screenshots/allure-detail.png)
+![Allure Behaviors](screenshots/allure-behaviors.png)
+
+### 覆盖率报告（93%）
+
+![Coverage](screenshots/coverage.png)
+
+### JMeter 200 并发压测
+
+![JMeter 200vu](screenshots/jmeter-200vu-aggregate.png)
 
 ---
 
@@ -106,10 +107,12 @@ pytest testcases/ # 全跑
 
 | 轨道 | 模块 | 用例数 |
 |---|---|---|
-| API | 登录 / 产品 / 会员 / 门店 / 订单 / 系统管理 | 110 |
-| UI | 登录 / 产品 / 会员 / 门店 / 订单 / 系统管理 | 73 |
-| 单元 | AES 加密函数 | 9 |
-| **合计** | **6 大模块 + 30 子功能** | **197** |
+| API | 管理员后台 | 123 |
+| API | 买家端 | 31 |
+| UI | 管理员后台 | 73 |
+| UI | 买家端 | 3 |
+| 单元 | AES 加密 | 9 |
+| **合计** | | **236** |
 
 ---
 
@@ -118,40 +121,48 @@ pytest testcases/ # 全跑
 | 工具 | 用途 |
 |---|---|
 | Python 3.11 | 编程语言 |
-| Playwright | UI 自动化 + CDP 弱网模拟 |
-| Pytest + pytest-xdist | 测试框架 + 并行 |
+| Playwright | UI 自动化 + CDP 弱网 |
+| Pytest + xdist | 测试框架 |
 | Requests | 接口测试 |
-| PyMySQL | 数据库直连断言 |
+| PyMySQL | DB 断言 |
 | PyCryptodome | AES 加密 |
 | jsonschema | 契约测试 |
-| Redis-py | 限流 + 缓存测试 |
+| Redis-py | 缓存测试 |
+| openpyxl | Excel 导出解析 |
+| pytest-cov | 覆盖率 |
+| JMeter 5.6.3 | 性能压测 |
+| WSL2 + Bash | 运维脚本 |
 | Allure | 测试报告 |
 
 ---
 
 ## 项目结构
 
-    mall4j-ui-api-autotest/
-    ├── config/              # 全局配置
-    ├── common/              # 日志 / DB / 请求封装
-    ├── pages/               # UI 页面对象（POM）
-    ├── api/                 # 接口封装
-    ├── schemas/             # JSON Schema 契约
-    ├── testcases/
-    │   ├── test_unit/       # 单元测试
-    │   ├── test_ui/         # UI 用例
-    │   └── test_api/        # 接口用例
-    ├── scripts/             # 运维脚本
-    ├── docs/                # 附加文档
-    ├── screenshots/         # 报告截图
-    ├── conftest.py          # 全局 Fixture
-    ├── pytest.ini           # Pytest 配置
-    ├── send_feishu.py       # 飞书通知
-    ├── run_all_tests.bat    # 一键运行
-    ├── BUGS.md              # 缺陷记录
-    ├── TEST_CASES.md        # 用例总表
-    ├── ARCHITECTURE.md      # 架构文档
-    └── requirements.txt
+```
+mall4j-ui-api-autotest/
+├── config/              # 全局配置
+├── common/              # 日志/DB/加密
+├── pages/               # POM 页面对象
+│   ├── admin/
+│   ├── buyer/
+│   └── seller/
+├── api/                 # 接口封装
+│   ├── admin/
+│   ├── buyer/
+│   ├── seller/
+│   └── client.py
+├── schemas/             # JSON Schema
+├── testcases/
+│   ├── test_unit/
+│   ├── test_ui/
+│   └── test_api/
+├── scripts/             # 运维脚本
+│   ├── shell/
+│   └── jmeter/
+├── docs/
+├── screenshots/
+└── conftest.py
+```
 
 ---
 
@@ -159,47 +170,76 @@ pytest testcases/ # 全跑
 
 ### 前置条件
 
-1. 本地部署 Mall4j（MySQL 3307 + Redis 6379 + 后端 8085/8086 + 前端 9527）
+1. Mall4j（MySQL 3307 + Redis 6379 + 后端 8085/8086 + 前端 9527/80）
 2. Python 3.11+
-3. Allure 命令行工具
+3. JMeter 5.6.3+
+4. WSL2 Ubuntu
+
+### 一键启动
+
+```powershell
+.\scripts\start_all.ps1
+```
 
 ### 安装
 
-    git clone https://github.com/StillStream-ink/mall4j-ui-api-autotest.git
-    cd mall4j-ui-api-autotest
-    python -m venv venv
-    venv\Scripts\activate
-    pip install -r requirements.txt
-    playwright install chromium firefox
-
-### 配置 .env
-
-    FEISHU_WEBHOOK=https://open.feishu.cn/open-apis/bot/v2/hook/你的地址
+```powershell
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+playwright install chromium firefox
+```
 
 ### 运行
 
-    # 全部用例
-    pytest testcases/ -v
+```bash
+# 全部
+pytest testcases/ -v
 
-    # 只跑接口
-    pytest testcases/test_api/ -q --ignore=testcases/test_api/test_zzz_login_rate_limit.py
+# 接口
+pytest testcases/test_api/ -q --ignore=testcases/test_api/admin/test_zzz_login_rate_limit.py
 
-    # 只跑 UI
-    pytest testcases/test_ui/ -q
+# UI
+pytest testcases/test_ui/ -q
 
-    # 只跑单元
-    pytest testcases/test_unit/ -q
+# 覆盖率
+pytest testcases/test_api/ --cov=api --cov=common --cov-report=html
 
-    # 生成 Allure 报告
-    pytest testcases/ --alluredir=reports/allure-results
-    allure serve reports/allure-results
+# Allure
+pytest testcases/ --alluredir=reports/allure-results
+allure serve reports/allure-results
+```
 
-    # 一键跑 + 飞书通知
-    run_all_tests.bat
+### 运维
+
+```bash
+cd /mnt/e/mall4j-ui-api-autotest/scripts/shell
+./check_env.sh       # 环境巡检
+./backup_mall4j.sh   # 数据库备份
+./rotate_logs.sh     # 日志轮转
+```
+
+---
+
+## 买家端测试数据恢复
+
+Mall4j 库存分两层，恢复时需同时改两张表：
+
+```sql
+USE yami_shops;
+UPDATE tz_prod SET total_stocks = 1000 WHERE prod_id = 75;
+UPDATE tz_sku SET stocks = 1000, actual_stocks = 1000 WHERE sku_id = 402;
+DELETE FROM tz_basket WHERE user_id = '51540df5255e4d22903b0f83921095ff';
+```
+
+清 Redis：
+
+```powershell
+python -c "import redis; redis.Redis(host='127.0.0.1', port=6379, db=0, protocol=2).flushdb()"
+```
 
 ---
 
 ## Let's Connect
 
 - GitHub: [@StillStream-ink](https://github.com/StillStream-ink)
-- Email: your_email@example.com

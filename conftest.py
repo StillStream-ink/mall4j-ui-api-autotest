@@ -1,21 +1,25 @@
-# -*- coding: utf-8 -*-
-"""Global fixtures: UI page + API session + failure screenshot + allure env"""
-import json
+import os
 import sys
-from pathlib import Path
-
-import allure
+import json
 import pytest
+import requests
+import pymysql
+import redis
+import allure
+
+from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-from common.logger import get_logger
 from config.settings import (
-    WEB_URL, API_URL, BROWSER, HEADLESS, SLOW_MO,
-    DEFAULT_TIMEOUT, ADMIN,
-    ALLURE_RESULTS_DIR, SCREENSHOT_DIR, BASE_DIR,
+    BROWSER, HEADLESS, SLOW_MO, DEFAULT_TIMEOUT,
+    WEB_URL, API_URL, ADMIN,
+    REDIS_HOST, REDIS_PORT,
+    ALLURE_RESULTS_DIR, SCREENSHOT_DIR,
 )
+from common.logger import get_logger
 from api.client import APIClient
-from api.login_api import LoginApi
+from api.admin.login_api import LoginApi
+from api.buyer.buyer_login import BuyerLogin
 
 logger = get_logger(__name__)
 
@@ -35,7 +39,6 @@ def browser():
 def page(browser):
     ctx = browser.new_context()
     pg = ctx.new_page()
-    # WebKit 首次启动慢，给它更长超时
     timeout = 60000 if BROWSER == "webkit" else DEFAULT_TIMEOUT
     pg.set_default_timeout(timeout)
     pg.goto(WEB_URL, wait_until="domcontentloaded", timeout=timeout)
@@ -66,11 +69,10 @@ def api_session(api_client):
 
 
 # ============================================================
-# pytest hooks: 失败自动截图
+# pytest hook: 记录每阶段结果（供截图 fixture 读取）
 # ============================================================
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """把每个阶段的执行结果挂到 item 上，供 capture_screenshot 使用"""
     outcome = yield
     rep = outcome.get_result()
     setattr(item, f"rep_{rep.when}", rep)
@@ -78,36 +80,41 @@ def pytest_runtest_makereport(item, call):
 
 @pytest.fixture(autouse=True)
 def capture_screenshot(request):
-    """用例失败时自动截图并挂到 Allure 报告"""
+    """UI 用例失败时自动截图并挂到 Allure 报告（兼容 page / buyer_logged_page）"""
     yield
-    if "page" not in request.fixturenames:
-        return
     rep = getattr(request.node, "rep_call", None)
     if rep is None or not rep.failed:
         return
 
-    # 保护：page fixture 可能已销毁
-    try:
-        page = request.getfixturevalue("page")
-    except Exception:
+    # 找 page / buyer_logged_page（二者取其一）
+    page_obj = None
+    for name in ("page", "buyer_logged_page"):
+        if name in request.fixturenames:
+            try:
+                page_obj = request.getfixturevalue(name)
+            except Exception:
+                page_obj = None
+            if page_obj:
+                break
+    if not page_obj:
         return
 
-    SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
-    safe_name = request.node.name.replace("/", "_").replace("\\", "_")
-    path = SCREENSHOT_DIR / f"FAILED_{safe_name}.png"
     try:
-        page.screenshot(path=str(path), full_page=True)
+        SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+        safe_name = request.node.name.replace("/", "_").replace("\\", "_")
+        path = SCREENSHOT_DIR / f"FAILED_{safe_name}.png"
+        page_obj.screenshot(path=str(path), full_page=True)
         allure.attach.file(
             str(path),
             name=f"失败截图 - {request.node.name}",
             attachment_type=allure.attachment_type.PNG,
         )
     except Exception as e:
-        logger.warning(f"screenshot failed: {e}")
+        logger.warning(f"失败截图失败: {e}")
 
 
 # ============================================================
-# pytest hooks: Allure 环境信息自动生成
+# pytest hook: Allure 环境信息自动生成
 # ============================================================
 def pytest_sessionfinish(session, exitstatus):
     try:
@@ -144,7 +151,6 @@ def pytest_sessionfinish(session, exitstatus):
 # ============================================================
 @pytest.fixture(scope="session")
 def db():
-    """数据库直连，用于接口 + DB 双重断言"""
     from common.db_helper import DBHelper
     helper = DBHelper()
     yield helper
@@ -156,10 +162,74 @@ def db():
 # ============================================================
 @pytest.fixture(scope="function")
 def valid_dvy(api_session):
-    """获取一个有效的快递公司（空列表时跳过测试）"""
     resp = api_session.get("/admin/delivery/list")
     body = resp.json()
     assert body["code"] == "00000", f"获取快递公司失败: {body}"
     if not body["data"]:
         pytest.skip("快递公司列表为空，跳过依赖快递公司的测试")
     return body["data"][0]
+
+
+# ============================================================
+# 买家端 fixture
+# ============================================================
+@pytest.fixture(scope="session")
+def buyer_token():
+    """买家登录，整个会话复用 token"""
+    return BuyerLogin().login()
+
+
+@pytest.fixture(scope="session")
+def buyer_headers(buyer_token):
+    return {
+        "Authorization": buyer_token,
+        "Content-Type": "application/json"
+    }
+
+
+@pytest.fixture
+def buyer_logged_page(page, buyer_token):
+    """买家端已登录 page：token 从 API 登录拿，注入 localStorage 跳过 UI 登录"""
+    page.goto("http://127.0.0.1")     # ← 改成 127.0.0.1
+    page.evaluate(f"localStorage.setItem('Token', '{buyer_token}')")
+    page.evaluate(f"localStorage.setItem('hadLogin', 'true')")
+    page.reload()
+    page.wait_for_load_state("domcontentloaded")
+    yield page
+
+
+@pytest.fixture
+def clean_buyer_data():
+    """测试结束后软删除本次测试产生的订单"""
+    yield
+    try:
+        from common.db_helper import DBHelper
+
+        DBHelper().execute(
+            "UPDATE tz_sku SET stocks = 1000000,actual_stocks = 1000000 WHERE sku_id = 402"
+        )
+        print("\n[环境准备] sku 402 库存已恢复为 1000000")
+    except Exception as e:
+        print(f"\n[清理警告] {e}")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def restore_buyer_test_env():
+    """每次测试会话开始前：恢复商品/SKU 库存 + 清 Redis"""
+    try:
+        from common.db_helper import DBHelper
+        # 商品总库存（下单校验用）
+        DBHelper().execute(
+            "UPDATE tz_prod SET total_stocks = 1000 WHERE prod_id = 75"
+        )
+        DBHelper().execute(
+            "UPDATE tz_sku SET stocks = 1000, actual_stocks = 1000 WHERE sku_id = 402"
+        )
+        print("\n[环境准备] prod 75 / sku 402 库存已恢复为 1000")
+
+        redis.Redis(
+            host=REDIS_HOST, port=REDIS_PORT, db=0, protocol=2
+        ).flushdb()
+        print("[环境准备] Redis 缓存已清空")
+    except Exception as e:
+        print(f"\n[环境准备失败] {e}")

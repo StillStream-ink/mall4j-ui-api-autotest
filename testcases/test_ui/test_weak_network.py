@@ -4,7 +4,7 @@ import allure
 import pytest
 
 from config.settings import WEB_URL, ADMIN
-from pages.login_dialog_page import LoginDialogPage
+from pages.admin.login_dialog_page import LoginDialogPage
 from playwright.sync_api import expect
 
 pytestmark = [

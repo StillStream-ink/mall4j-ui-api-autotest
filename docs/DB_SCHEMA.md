@@ -61,6 +61,40 @@
 
 测试约定：`autotest_` 前缀，测完自动清理。
 
+### 2.4 tz_basket（购物车）
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| basket_id | bigint | 主键 |
+| shop_id | bigint | 店铺 ID |
+| prod_id | bigint | 商品 ID |
+| sku_id | bigint | SKU ID |
+| user_id | varchar | 买家 ID |
+| basket_count | int | 数量（**注意：不是 prod_count**） |
+| basket_date | datetime | 加入时间 |
+
+### 2.5 tz_user_addr（收货地址）
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| addr_id | bigint | 主键 |
+| user_id | varchar | 买家 ID |
+| receiver | varchar | 收货人 |
+| mobile | varchar | 手机号 |
+| detail_address | varchar | 详细地址 |
+
+---
+
+### 2.6 库存分两层说明
+
+Mall4j 的库存分两层，**改库存时两张表都要改**：
+
+| 表 | 字段 | 用途 |
+|---|---|---|
+| `tz_prod` | `total_stocks` | **下单校验用**（真正决定能否下单） |
+| `tz_sku` | `stocks` | SKU 总库存（展示用） |
+| `tz_sku` | `actual_stocks` | SKU 实际可售库存 |
+
 ---
 
 ## 三、多表关联关系
@@ -71,27 +105,6 @@ tz_order --< tz_order_item
 | +-- prod_id -> tz_prod
 |
 +-- order_number（业务主键）
-
-
----
-
-## 四、测试数据约定
-
-| 前缀 | 用途 | 清理 |
-|---|---|---|
-| `autotest_` | 参数、角色 | scripts/clean_test_data.sh |
-| `au_` | 管理员 | 同上 |
-| 无前缀 | 系统内置数据 | 绝不修改 |
-
----
-
-## 五、面试可讲点
-
-1. **接口 + DB 双重断言**：接口返回成功 ≠ 数据落库
-2. **多表关联校验**：订单金额 = SUM(订单项)，用户权限 = 多表 JOIN
-3. **孤儿记录巡检**：LEFT JOIN + WHERE IS NULL
-4. **测试数据隔离**：autotest_ 前缀 + 自动清理
-5. **事务陷阱**：pymysql autocommit=False 导致 REPEATABLE READ 快照，改 autocommit=True
 
 
 ---
