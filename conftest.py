@@ -215,7 +215,14 @@ def clean_buyer_data():
 
 @pytest.fixture(scope="session", autouse=True)
 def restore_buyer_test_env():
-    """每次测试会话开始前：恢复商品/SKU 库存 + 清 Redis"""
+    """每次测试会话开始前：恢复 SKU 402 库存 + 清 Redis（CI 环境跳过）"""
+    import os
+
+    # CI 环境没有 MySQL/Redis，跳过
+    if os.getenv("CI"):
+        print("\n[环境准备] CI 环境，跳过数据库/Redis 准备")
+        return
+
     try:
         from common.db_helper import DBHelper
         # 商品总库存（下单校验用）

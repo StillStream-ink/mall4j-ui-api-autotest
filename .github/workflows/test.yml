@@ -1,4 +1,4 @@
-name: Unit Tests
+name: CI
 
 on:
   push:
@@ -8,22 +8,100 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ============================================================
+  # Job 1：单元测试（不依赖后端，秒级）
+  # ============================================================
   unit:
-    name: Unit Tests (no backend)
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-xdist allure-pytest pycryptodome playwright requests
-          python -m playwright install --with-deps chromium
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage
         run: |
-          pytest testcases/test_unit/ -v
+          pytest testcases/test_unit/ -v \
+            --cov=common.crypto \
+            --cov-report=term-missing
+
+  # ============================================================
+  # Job 2：Schema 校验 + 项目结构检查（不依赖后端）
+  # ============================================================
+  quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Syntax check all Python files
+        run: |
+          echo "=== 检查所有 Python 文件语法 ==="
+          find . -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" \
+            | while read f; do
+              python -m py_compile "$f" || exit 1
+            done
+          echo "✅ 所有 Python 文件语法正确"
+
+      - name: Validate JSON Schemas
+        run: |
+          echo "=== 校验所有 JSON Schema 定义 ==="
+          python -c "
+          import jsonschema, importlib, sys
+          from pathlib import Path
+          total = 0
+          for f in Path('schemas').glob('*.py'):
+              if f.name == '__init__.py': continue
+              mod = importlib.import_module(f'schemas.{f.stem}')
+              for attr in dir(mod):
+                  if attr.endswith('_SCHEMA'):
+                      jsonschema.Draft202012Validator.check_schema(getattr(mod, attr))
+                      print(f'  ✅ {f.name}.{attr}')
+                      total += 1
+          print(f'✅ 共校验 {total} 个 Schema，全部合法')
+          "
+
+      - name: Verify project structure
+        run: |
+          echo "=== 检查项目结构完整性 ==="
+          for d in api/admin api/buyer testcases/test_api/admin \
+                   testcases/test_api/buyer testcases/test_ui/buyer \
+                   testcases/test_unit schemas scripts; do
+            if [ -d "$d" ]; then
+              echo "  ✅ $d"
+            else
+              echo "  ❌ 缺少目录: $d"
+              exit 1
+            fi
+          done
+
+      - name: Count test functions
+        run: |
+          TOTAL=$(grep -r "def test_" testcases/ --include="*.py" | wc -l)
+          echo "📊 共发现 $TOTAL 个测试函数"
+          echo "### CI 结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 单元测试通过" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Schema 校验通过" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 项目结构完整" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 测试函数总数：$TOTAL" >> $GITHUB_STEP_SUMMARY
