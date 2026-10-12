@@ -2,6 +2,7 @@
 
 > 基于 Playwright + Pytest + JMeter 的电商系统双端三轨自动化测试项目
 
+[![CI](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml/badge.svg)](https://github.com/StillStream-ink/mall4j-ui-api-autotest/actions/workflows/test.yml)
 ![Tests](https://img.shields.io/badge/tests-236%20cases-blue)
 ![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
 ![Bugs](https://img.shields.io/badge/bugs-4%20found-red)
