@@ -44,3 +44,7 @@ reports/screenshots/
 # JMeter artifacts
 reports/jmeter-report/
 reports/jmeter.jtl
+
+# Excel 临时锁文件
+~$*.xlsx
+docs/~$*
