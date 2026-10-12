@@ -1,7 +1,12 @@
 pytest==9.1.1
+pytest-cov
+pytest-xdist
 playwright==1.63.0
 allure-pytest==2.16.2
 requests==2.34.2
 python-dotenv==1.0.1
 pycryptodome==3.21.0
 pymysql==1.1.1
+jsonschema>=4.20.0
+redis
+openpyxl
